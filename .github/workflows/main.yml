@@ -8,7 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Download repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Java
@@ -17,11 +17,23 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find Android project
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Extract Android project
         run: |
           unzip -o Firewall.black-starter.zip -d starter
-          find starter -type f
+          find starter -name settings.gradle.kts
 
-      - name: Build APK
+      - name: Build debug APK
         run: |
-          echo "Starter files extracted. Android Gradle project setup must be verified before building."
+          PROJECT_DIR=$(dirname "$(find starter -name settings.gradle.kts | head -n 1)")
+          cd "$PROJECT_DIR"
+          gradle assembleDebug
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Firewall-black-debug-apk
+          path: starter/**/app/build/outputs/apk/debug/*.apk
