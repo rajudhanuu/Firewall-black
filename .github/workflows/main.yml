@@ -1,0 +1,27 @@
+
+name: Build Firewall.black APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Find Android project
+        run: |
+          unzip -o Firewall.black-starter.zip -d starter
+          find starter -type f
+
+      - name: Build APK
+        run: |
+          echo "Starter files extracted. Android Gradle project setup must be verified before building."
