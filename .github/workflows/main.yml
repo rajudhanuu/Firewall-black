@@ -25,11 +25,28 @@ jobs:
           unzip -o Firewall.black-starter.zip -d starter
           find starter -name settings.gradle.kts
 
+      - name: Fix Java and Kotlin targets
+        run: |
+          FILE=$(find starter -path '*/app/build.gradle.kts' | head -n 1)
+          cat >> "$FILE" <<'EOF'
+
+android {
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+EOF
+
       - name: Build debug APK
         run: |
           PROJECT_DIR=$(dirname "$(find starter -name settings.gradle.kts | head -n 1)")
           cd "$PROJECT_DIR"
           gradle assembleDebug
+
 
       - name: Upload APK
         if: success()
