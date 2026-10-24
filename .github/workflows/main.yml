@@ -1,4 +1,5 @@
 
+
 name: Build Firewall.black APK
 
 on:
@@ -7,18 +8,24 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
 
       - name: Extract Android project
         run: |
@@ -26,27 +33,43 @@ jobs:
           find starter -name settings.gradle.kts
 
       - name: Fix Java and Kotlin targets
+        shell: bash
         run: |
-          FILE=$(find starter -path '*/app/build.gradle.kts' | head -n 1)
+          FILE=$(find starter -path '*/app/build.gradle.kts' -print -quit)
+
+          if [ -z "$FILE" ]; then
+            echo "ERROR: app/build.gradle.kts was not found"
+            exit 1
+          fi
+
           cat >> "$FILE" <<'EOF'
 
-android {
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-}
-EOF
+          android {
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }
+          EOF
+
+          echo "Updated: $FILE"
 
       - name: Build debug APK
+        shell: bash
         run: |
-          PROJECT_DIR=$(dirname "$(find starter -name settings.gradle.kts | head -n 1)")
+          SETTINGS=$(find starter -name settings.gradle.kts -print -quit)
+
+          if [ -z "$SETTINGS" ]; then
+            echo "ERROR: settings.gradle.kts was not found"
+            exit 1
+          fi
+
+          PROJECT_DIR=$(dirname "$SETTINGS")
           cd "$PROJECT_DIR"
           gradle assembleDebug
-
 
       - name: Upload APK
         if: success()
@@ -54,3 +77,4 @@ EOF
         with:
           name: Firewall-black-debug-apk
           path: starter/**/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
